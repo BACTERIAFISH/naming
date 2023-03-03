@@ -44,6 +44,11 @@ class MyAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void removeFavorite(WordPair pair) {
+    favorites.remove(pair);
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatefulWidget {
@@ -188,6 +193,7 @@ class BigCard extends StatelessWidget {
 class FavoritePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
     var appState = context.watch<MyAppState>();
     var favorites = appState.favorites;
 
@@ -205,8 +211,18 @@ class FavoritePage extends StatelessWidget {
         ),
         for (var pair in favorites)
           ListTile(
-            leading: Icon(Icons.favorite),
+            leading: Icon(
+              Icons.favorite,
+              color: theme.colorScheme.primary,
+            ),
             title: Text(pair.asLowerCase),
+            trailing: IconButton(
+              icon: Icon(Icons.delete_outline),
+              color: theme.colorScheme.primary,
+              onPressed: () {
+                appState.removeFavorite(pair);
+              },
+            ),
           ),
       ],
     );
