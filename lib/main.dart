@@ -28,19 +28,26 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
+  var history = <WordPair>[];
+
+  GlobalKey? historyKey;
 
   void getNext() {
+    history.insert(0, current);
+    var animatedList = historyKey?.currentState as AnimatedListState?;
+    animatedList?.insertItem(0);
     current = WordPair.random();
     notifyListeners();
   }
 
   var favorites = <WordPair>[];
 
-  void toggleFavorite() {
-    if (favorites.contains(current)) {
-      favorites.remove(current);
+  void toggleFavorite([WordPair? pair]) {
+    pair = pair ?? current;
+    if (favorites.contains(pair)) {
+      favorites.remove(pair);
     } else {
-      favorites.add(current);
+      favorites.add(pair);
     }
     notifyListeners();
   }
@@ -132,6 +139,11 @@ class GeneratorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Expanded(
+            flex: 3,
+            child: HistoryView(),
+          ),
+          SizedBox(height: 10),
           BigCard(pair: pair),
           SizedBox(height: 10),
           Row(
@@ -225,6 +237,59 @@ class FavoritePage extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class HistoryView extends StatefulWidget {
+  const HistoryView({Key? key}) : super(key: key);
+
+  @override
+  State<HistoryView> createState() => _HistoryViewState();
+}
+
+class _HistoryViewState extends State<HistoryView> {
+  final _key = GlobalKey();
+
+  static const Gradient _maskingGradient = LinearGradient(
+    colors: [Colors.transparent, Colors.black],
+    stops: [0.0, 0.5],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<MyAppState>();
+    appState.historyKey = _key;
+
+    return ShaderMask(
+      shaderCallback: (bounds) => _maskingGradient.createShader(bounds),
+      blendMode: BlendMode.dstIn,
+      child: AnimatedList(
+        key: _key,
+        reverse: true,
+        padding: EdgeInsets.only(top: 100),
+        initialItemCount: appState.history.length,
+        itemBuilder: (context, index, animation) {
+          final pair = appState.history[index];
+
+          return SizeTransition(
+            sizeFactor: animation,
+            child: Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite(pair);
+                },
+                icon: appState.favorites.contains(pair) ? Icon(Icons.favorite, size: 12) : SizedBox(),
+                label: Text(
+                  pair.asLowerCase,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
